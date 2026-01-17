@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tic Tac Toe Arena</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: radial-gradient(circle, #020617, #000);
+      font-family: Arial, sans-serif;
+      color: white;
+      text-align: center;
+    }
+
+    .screen {
+      display: none;
+      animation: fade 0.8s;
+    }
+
+    .active {
+      display: block;
+    }
+
+    @keyframes fade {
+      from {opacity:0; transform:scale(0.9);}
+      to {opacity:1; transform:scale(1);}
+    }
+
+    h1 {
+      color: #d7540d;
+      text-shadow: 0 0 20px rgb(26, 14, 139);
+      margin-top: 30px;
+    }
+
+    button {
+      padding: 14px 35px;
+      border-radius: 12px;
+      border: none;
+      font-size:20px;
+      color: white;
+      background: #a60749;
+      cursor: pointer;
+      box-shadow: 0 0 20px #0f42af;
+      margin: 15px;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 110px);
+      gap: 12px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .cell {
+      width: 110px;
+      height: 110px;
+      background: #020617;
+      border: 2px solid #38bdf8;
+      font-size: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-radius: 15px;
+      box-shadow: 0 0 20px #38bdf8;
+      transition: 0.2s;
+    }
+
+    .cell:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 30px cyan;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-size: 22px;
+      color: #22d3ee;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- HOME SCREEN PAGE -->
+<div class="screen active" id="homeScreen">
+  <h1>🎮 Tic Tac Toe Arena 🎮</h1>
+  <p>Select your battle mode</p>
+
+  <button onclick="startFriendGame()">👫 friend fight</button>
+  <button onclick="startAIGame()">🤖 Play With AI</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="gameScreen">
+  <h1>⚡ Battle Arena ⚡</h1>
+  <h3 id="modeText"></h3>
+
+  <div class="board" id="board"></div>
+
+  <div id="status"></div>
+
+  <button onclick="restartGame()">Restart</button>
+  <button onclick="goHome()">Home</button>
+</div>
+
+<!-- Sounds -->
+<audio id="clickSound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
+<audio id="winSound" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"></audio>
+
+<script>
+  let board = ["", "", "", "", "", "", "", "", ""];
+  let currentPlayer = "X";
+  let gameActive = true;
+  let mode = "";
+
+  const winPatterns = [
+    [0,1,2],
+    [3,4,5],
+    [6,7,8],
+    [0,3,6],
+    [1,4,7],
+    [2,5,8],
+    [0,4,8],
+    [2,4,6]
+  ];
+
+  function startFriendGame() {
+    mode = "FRIEND";
+    startGame("Friend Mode: X vs friend O");
+  }
+
+  function startAIGame() {
+    mode = "AI";
+    startGame("AI Mode: You vs AI");
+  }
+
+  function startGame(text) {
+    document.getElementById("homeScreen").classList.remove("active");
+    document.getElementById("gameScreen").classList.add("active");
+    document.getElementById("modeText").innerText = text;
+    resetBoard();
+    createBoard();
+    updateStatus();
+  }
+
+  function createBoard() {
+    const boardDiv = document.getElementById("board");
+    boardDiv.innerHTML = "";
+
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.onclick = () => makeMove(i);
+      boardDiv.appendChild(cell);
+    }
+  }
+
+  function makeMove(index) {
+    if (!gameActive || board[index] !== "") return;
+
+    document.getElementById("clickSound").play();
+
+    board[index] = currentPlayer;
+    document.getElementsByClassName("cell")[index].innerText = currentPlayer;
+
+    if (checkWinner(currentPlayer)) {
+      document.getElementById("status").innerText = `🔥 Player ${currentPlayer} Wins!`;
+      document.getElementById("winSound").play();
+      gameActive = false;
+      return;
+    }
+
+    if (isDraw()) {
+      document.getElementById("status").innerText = "😲 It's a Draw!";
+      gameActive = false;
+      return;
+    }
+
+    if (mode === "AI" && currentPlayer === "X") {
+      currentPlayer = "O";
+      updateStatus();
+      setTimeout(aiMove, 500);
+    } else {
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      updateStatus();
+    }
+  }
+
+  function aiMove() {
+    let empty = board.map((v,i)=>v==""?i:null).filter(v=>v!==null);
+    let move = empty[Math.floor(Math.random()*empty.length)];
+
+    board[move] = "O";
+    document.getElementsByClassName("cell")[move].innerText = "O";
+
+    if (checkWinner("O")) {
+      document.getElementById("status").innerText = "🤖 AI Wins!";
+      document.getElementById("winSound").play();
+      gameActive = false;
+      return;
+    }
+
+    if (isDraw()) {
+      document.getElementById("status").innerText = "😲 It's a Draw!";
+      gameActive = false;
+      return;
+    }
+
+    currentPlayer = "X";
+    updateStatus();
+  }
+
+  function checkWinner(player) {
+    return winPatterns.some(pattern =>
+      pattern.every(i => board[i] === player)
+    );
+  }
+
+  function isDraw() {
+    return !board.includes("");
+  }
+
+  function updateStatus() {
+    document.getElementById("status").innerText = `Player ${currentPlayer}'s Turn`;
+  }
+
+  function resetBoard() {
+    board = ["", "", "", "", "", "", "", "", ""];
+    currentPlayer = "X";
+    gameActive = true;
+  }
+
+  function restartGame() {
+    resetBoard();
+    createBoard();
+    updateStatus();
+  }
+
+  function goHome() {
+    document.getElementById("gameScreen").classList.remove("active");
+    document.getElementById("homeScreen").classList.add("active");
+  }
+</script>
+
+</body>
+</html>
